@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
+const role = require('./role');
 
 const User = sequelize.define('User', {
   id: {
@@ -7,15 +8,55 @@ const User = sequelize.define('User', {
     autoIncrement: true,
     primaryKey: true
   },
-  username: {
+  companyId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  firstName: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: false
+  },
+  lastName: {
+    type: DataTypes.STRING,
+    allowNull: false
   },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
+  },
+  phoneNumber: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  roleId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: role,
+      key: 'id'
+    }
+  },
+  email_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  phone_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  joiningDate: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  dob: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM('active', 'deleted', 'inactive', 'not_verified'),
+    defaultValue: 'not_verified'
   },
   password: {
     type: DataTypes.STRING,
