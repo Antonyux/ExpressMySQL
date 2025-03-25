@@ -1,13 +1,10 @@
 const express = require('express');
-const { register, login } = require('../controllers/auth');
-const authMiddleware = require('../middlewares/auth');
+const { register, login } = require('../controllers/auth.controller'); // Ensure correct file name
+const authMiddleware = require('../middlewares/auth.middleware'); // Ensure correct import
 
 const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
-router.get('/protected', authMiddleware, (req, res) => {
-  res.json({ message: "You have access", user: req.user });
-});
 
 module.exports = router;
