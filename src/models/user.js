@@ -61,7 +61,28 @@ const User = sequelize.define('User', {
   password: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  otp: {
+      type: DataTypes.STRING,
+      allowNull: true
+  },
+  otp_created_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+  },
+  last_signed_in_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+  },
+  verification_token: {
+      type: DataTypes.STRING,
+      allowNull: true
+  },
+  verification_attempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
   }
+
 }, {
   timestamps: true
 });

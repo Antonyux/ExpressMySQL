@@ -1,24 +1,28 @@
 const bcrypt = require('bcryptjs');
 const db = require('../models');
 const User = db.User;
-const generateEmailToken = require('../utils/generateEmailToken');
-const sendEmail = require('../utils/sendEmail');
-const generateOTP = require('../utils/generateOTP');
-const sendSMS = require('../utils/sendSMS');
+// const generateEmailToken = require('../utils/generateEmailToken');
+// const sendEmail = require('../utils/sendEmail');
+// const generateOTP = require('../utils/generateOTP');
+// const sendSMS = require('../utils/sendSMS');
 
 exports.register = async (req, res) => {
     try {
-        const { firstName, lastName, email, phoneNumber, password } = req.body;
+        const { companyId, firstName, lastName, email, phoneNumber, password, roleId } = req.body;
         
         // Ensure at least one verification method is provided
         if (!email && !phoneNumber) {
             return res.status(400).json({ message: "Either email or phone number is required for verification." });
         }
 
+        if (!password || password.length !== 10) {
+            return res.status(400).json({ message: "Password must be exactly 10 characters long." });
+        }
+
         // Check if email or phone number is already registered
         const existingUser = await User.findOne({ 
             where: { 
-                [db.Sequelize.Op.or]: [{ email }, { phoneNumber }] 
+                [db.sequelize.Op.or]: [{ email }, { phoneNumber }] 
             } 
         });
         if (existingUser) {
@@ -30,13 +34,18 @@ exports.register = async (req, res) => {
 
         // Create user in the database (unverified)
         const user = await User.create({ 
+            companyId,
             firstName, 
             lastName, 
             email, 
             phoneNumber, 
             password: hashedPassword,
+            roleId,
             email_verified: false, 
-            phone_verified: false
+            phone_verified: false,
+            status: 'not_verified',
+            verification_attempts: 0,
+            verification_token: generateVerificationToken
         });
 
         // Generate and send verification (either Email or SMS)
@@ -99,3 +108,53 @@ sendOTP = async (req, res) => {
     res.json({ message: 'OTP sent successfully!' });
 };
 */
+
+// Twilio SMS Service
+async function sendSMS(phoneNumber, message) {
+    try {
+      const client = twilio(
+        process.env.TWILIO_ACCOUNT_SID, 
+        process.env.TWILIO_AUTH_TOKEN
+      );
+  
+      await client.messages.create({
+        body: message,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber
+      });
+  
+      console.log(`SMS sent successfully to ${phoneNumber}`);
+    } catch (error) {
+      console.error('Error sending SMS:', error);
+      throw new Error('Failed to send SMS verification');
+    }
+  }
+  
+  // Nodemailer Email Service
+  async function sendEmail(to, subject, html) {
+    try {
+      // Create a transporter using SMTP
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+  
+      // Send email
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM,
+        to: to,
+        subject: subject,
+        html: html
+      });
+  
+      console.log(`Email sent successfully to ${to}`);
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw new Error('Failed to send verification email');
+    }
+  }

@@ -8,5 +8,6 @@ User.belongsTo(Role, { foreignKey: 'roleId' });
 const db = {};
 db.sequelize = sequelize;
 db.User = User;
+db.Role = Role;
 
 module.exports = db;
