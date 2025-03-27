@@ -1,28 +1,43 @@
 const bcrypt = require('bcryptjs');
 const db = require('../models');
+const axios = require('axios');
+
+const generateEmailToken = require('../utils/generateEmailToken');
+//const generateOTP = require('../utils/generateOTP');
+const generateToken = require('../utils/generateToken')
+
 const User = db.User;
-// const generateEmailToken = require('../utils/generateEmailToken');
-// const sendEmail = require('../utils/sendEmail');
-// const generateOTP = require('../utils/generateOTP');
-// const sendSMS = require('../utils/sendSMS');
+
+const { Op } = require('sequelize');
+const jwt = require('jsonwebtoken');
+
+
+
+const sendEmail = async (to, subject, text) => {
+    console.log(`Sending email to ${to}: ${subject} - ${text}`);
+};
+
+const sendSMS = async (phone, message) => {
+    console.log(`Sending SMS to ${phone}: ${message}`);
+};
 
 exports.register = async (req, res) => {
     try {
-        const { companyId, firstName, lastName, email, phoneNumber, password, roleId } = req.body;
+        const { companyId, firstName, lastName, email, phoneNumber, password, roleId, joiningDate, dob } = req.body;
         
         // Ensure at least one verification method is provided
         if (!email && !phoneNumber) {
             return res.status(400).json({ message: "Either email or phone number is required for verification." });
         }
 
-        if (!password || password.length !== 10) {
-            return res.status(400).json({ message: "Password must be exactly 10 characters long." });
+        if (!password || password.length < 8) {
+            return res.status(400).json({ message: "Password must be at least 8 characters long." });
         }
 
         // Check if email or phone number is already registered
         const existingUser = await User.findOne({ 
             where: { 
-                [db.sequelize.Op.or]: [{ email }, { phoneNumber }] 
+                [Op.or]: [{ email }, { phoneNumber }] 
             } 
         });
         if (existingUser) {
@@ -41,11 +56,12 @@ exports.register = async (req, res) => {
             phoneNumber, 
             password: hashedPassword,
             roleId,
+            joiningDate,
+            dob,
             email_verified: false, 
             phone_verified: false,
             status: 'not_verified',
-            verification_attempts: 0,
-            verification_token: generateVerificationToken
+            verification_attempts: 0
         });
 
         // Generate and send verification (either Email or SMS)
@@ -56,8 +72,9 @@ exports.register = async (req, res) => {
         }
 
         if (phoneNumber) {
-            const otp = generateOTP();
-            await User.update({ otp }, { where: { id: user.id } });
+            const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit OTP
+            user.otp = otp;
+            await user.save();
             await sendSMS(phoneNumber, `Your OTP code is: ${otp}`);
         }
 
@@ -74,87 +91,152 @@ exports.register = async (req, res) => {
 
 
 exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ where: { email } });
-
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
-
-
-    // Generate JWT token
-    const token = generateToken(user);
-
-    
-    res.json({ message: "Login successful", token });
-  } catch (error) {
-    res.status(500).json({ error: "Error logging in" });
-  }
-};
-
-/*
-sendOTP = async (req, res) => {
-    const { phoneNumber } = req.body;
-    
-    if (!phoneNumber) return res.status(400).json({ message: 'Phone number is required' });
-
-    const otp = generateOTP();
-    await User.update({ otp }, { where: { phoneNumber } }); // Save OTP in DB
-
-    await sendSMS(phoneNumber, `Your OTP code is: ${otp}`); // Send OTP via SMS
-
-    res.json({ message: 'OTP sent successfully!' });
-};
-*/
-
-// Twilio SMS Service
-async function sendSMS(phoneNumber, message) {
     try {
-      const client = twilio(
-        process.env.TWILIO_ACCOUNT_SID, 
-        process.env.TWILIO_AUTH_TOKEN
-      );
+      const { email, password } = req.body;
+      const user = await User.findOne({ where: { email } });
   
-      await client.messages.create({
-        body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: phoneNumber
+      if (!user) return res.status(404).json({ error: "User not found" });
+  
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+  
+      // Generate JWT token
+      const token = generateToken(user);
+  
+      // Set secure, HTTP-only cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,  // Prevents client-side JavaScript from accessing the cookie
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict', // Protects against CSRF attacks
+        maxAge: 1 * 60 * 60 * 1000
       });
   
-      console.log(`SMS sent successfully to ${phoneNumber}`);
+      res.json({ message: "Login successful" });
     } catch (error) {
-      console.error('Error sending SMS:', error);
-      throw new Error('Failed to send SMS verification');
+      res.status(500).json({ error: "Error logging in" });
     }
-  }
+  };
   
-  // Nodemailer Email Service
-  async function sendEmail(to, subject, html) {
+
+exports.emailverify = async (req, res) => {
     try {
-      // Create a transporter using SMTP
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(400).json({ message: 'Invalid or missing token' });
         }
-      });
-  
-      // Send email
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
-        to: to,
-        subject: subject,
-        html: html
-      });
-  
-      console.log(`Email sent successfully to ${to}`);
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.EMAIL_VERIFICATION_SECRET);
+
+        // Find user
+        const user = await User.findByPk(decoded.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Mark email as verified
+        await User.update({ isEmailVerified: true }, { where: { id: user.id } });
+
+        return res.json({ message: 'Email verified successfully!' });
+
     } catch (error) {
-      console.error('Error sending email:', error);
-      throw new Error('Failed to send verification email');
+        console.error('Error verifying email:', error);
+        return res.status(400).json({ message: 'Invalid or expired token' });
     }
-  }
+};
+
+
+
+exports.smsverify = async (req, res) => {
+    try {
+        const { phoneNumber, otp } = req.body;
+
+        // Find user
+        const user = await User.findOne({ where: { phoneNumber } });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check OTP validity
+        if (user.otp !== otp) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        if (new Date() > user.otpExpiresAt) {
+            return res.status(400).json({ message: 'OTP expired' });
+        }
+
+        // Mark phone number as verified
+        await User.update(
+            { otp: null, otpExpiresAt: null, isPhoneVerified: true }, 
+            { where: { phoneNumber } }
+        );
+
+        return res.json({ message: 'Phone number verified successfully!' });
+
+    } catch (error) {
+        console.error('Error verifying OTP:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+
+
+
+// async function sendSMS(phoneNumber, message) {
+//   try {
+//     const response = await axios.post('https://textbelt.com/text', {
+//       phone: phoneNumber,
+//       message: message,
+//       key: 'textbelt', // Free key (limited to 1 message per day)
+//     });
+
+//     if (response.data.success) {
+//       console.log(`SMS sent successfully to ${phoneNumber}`);
+//     } else {
+//       console.error('Failed to send SMS:', response.data);
+//       throw new Error(response.data.error || 'Failed to send SMS');
+//     }
+//   } catch (error) {
+//     console.error('Error sending SMS:', error);
+//     throw new Error('Failed to send SMS verification');
+//   }
+// }
+
+// // Example Usage:
+// // sendSMS('+1234567890', 'Hello from Textbelt!');
+
+
+// // Nodemailer Email Service
+// async function sendEmail(to, subject, html) {
+// try {
+//     // Create a transporter using SMTP
+//     const transporter = nodemailer.createTransport({
+//     host: process.env.EMAIL_HOST,
+//     port: process.env.EMAIL_PORT,
+//     secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+//     auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS
+//     }
+//     });
+
+//     // Send email
+//     await transporter.sendMail({
+//     from: process.env.EMAIL_FROM,
+//     to: to,
+//     subject: subject,
+//     html: html
+//     });
+
+//     console.log(`Email sent successfully to ${to}`);
+// } catch (error) {
+//     console.error('Error sending email:', error);
+//     throw new Error('Failed to send verification email');
+// }
+// }
+
+
