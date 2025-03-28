@@ -1,10 +1,17 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const routes = require('./routes');
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: 'Too many requests, please try again later.',
+});
+
 
 const app = express();
 
@@ -18,16 +25,13 @@ app.use(cors());
 app.use(morgan('dev'));
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: 'Too many requests, please try again later.',
-});
 app.use(limiter);
 
 // Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(cookieParser());
 
 // Routes
 app.use(routes);

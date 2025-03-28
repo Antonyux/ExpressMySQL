@@ -1,11 +1,12 @@
 const express = require('express');
-const { register, login, emailverify, smsverify } = require('../controllers/auth'); // Ensure correct file name
+const { register, login, emailVerify, smsVerify, sendEmailSMS } = require('../controllers/auth');
 
 const router = express.Router();
 
 router.post('/register', register);
-router.post('/sms', smsverify);
-router.post('/email', emailverify);
+router.post('/sms', smsVerify);
+router.post('/email', emailVerify);
 router.post('/login', login);
+router.post('/sendES', sendEmailSMS);
 
 module.exports = router;

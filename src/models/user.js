@@ -1,7 +1,10 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-const User = sequelize.define('User', {
+const Role = require('./role');
+
+
+const User = sequelize.define('Users', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -33,7 +36,7 @@ const User = sequelize.define('User', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Roles',
+      model: Role,
       key: 'id'
     }
   },
@@ -65,7 +68,7 @@ const User = sequelize.define('User', {
       type: DataTypes.STRING,
       allowNull: true
   },
-  otp_created_at: {
+  otpExpiresAt: {
       type: DataTypes.DATE,
       allowNull: true
   },

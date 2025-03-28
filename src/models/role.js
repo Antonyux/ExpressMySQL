@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-const Role = sequelize.define('Role', {
+const Role = sequelize.define('Roles', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -12,8 +12,19 @@ const Role = sequelize.define('Role', {
     allowNull: false,
     unique: true
   }
-}, {
-  timestamps: true
+}, { timestamps: true });
+
+
+Role.afterSync(async () => {
+  const roles = ["Admin", "Engineer", "Manager"];
+  for (const roleName of roles) {
+    await Role.findOrCreate({
+      where: { name: roleName },
+      defaults: { name: roleName }
+    });
+  }
+  console.log("✅ Default roles inserted");
 });
+
 
 module.exports = Role;

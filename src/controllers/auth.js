@@ -3,7 +3,7 @@ const db = require('../models');
 const axios = require('axios');
 
 const generateEmailToken = require('../utils/generateEmailToken');
-//const generateOTP = require('../utils/generateOTP');
+const generateOTP = require('../utils/generateOTP');
 const generateToken = require('../utils/generateToken')
 
 const User = db.User;
@@ -24,7 +24,7 @@ const sendSMS = async (phone, message) => {
 exports.register = async (req, res) => {
     try {
         const { companyId, firstName, lastName, email, phoneNumber, password, roleId, joiningDate, dob } = req.body;
-        
+
         // Ensure at least one verification method is provided
         if (!email && !phoneNumber) {
             return res.status(400).json({ message: "Either email or phone number is required for verification." });
@@ -35,10 +35,10 @@ exports.register = async (req, res) => {
         }
 
         // Check if email or phone number is already registered
-        const existingUser = await User.findOne({ 
-            where: { 
-                [Op.or]: [{ email }, { phoneNumber }] 
-            } 
+        const existingUser = await User.findOne({
+            where: {
+                [Op.or]: [{ email }, { phoneNumber }]
+            }
         });
         if (existingUser) {
             return res.status(400).json({ message: "Email or phone number already registered" });
@@ -48,38 +48,20 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create user in the database (unverified)
-        const user = await User.create({ 
+        const user = await User.create({
             companyId,
-            firstName, 
-            lastName, 
-            email, 
-            phoneNumber, 
+            firstName,
+            lastName,
+            email,
+            phoneNumber,
             password: hashedPassword,
             roleId,
             joiningDate,
-            dob,
-            email_verified: false, 
-            phone_verified: false,
-            status: 'not_verified',
-            verification_attempts: 0
+            dob
         });
 
-        // Generate and send verification (either Email or SMS)
-        if (email) {
-            const emailToken = generateEmailToken(user.id);
-            const verificationLink = `${process.env.BASE_URL}/api/auth/verify-email?token=${emailToken}`;
-            await sendEmail(email, "Verify Your Email", `Click here to verify your email: ${verificationLink}`);
-        }
-
-        if (phoneNumber) {
-            const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit OTP
-            user.otp = otp;
-            await user.save();
-            await sendSMS(phoneNumber, `Your OTP code is: ${otp}`);
-        }
-
-        res.status(201).json({ 
-            message: "User registered successfully! Please verify via Email or SMS.",
+        res.status(201).json({
+            message: "User registered successfully! Next please verify via Email or SMS or both.",
             user: { id: user.id, firstName, lastName, email, phoneNumber }
         });
 
@@ -90,35 +72,91 @@ exports.register = async (req, res) => {
 };
 
 
+exports.sendEmailSMS = async (req, res) => {
+    try {
+        // const { email, phoneNumber } = req.body;
+        const email = req.body.email ? req.body.email : null;
+        const phoneNumber = req.body.phoneNumber ? req.body.phoneNumber : null;
+
+        // Ensure at least one verification method is provided
+        if (!email && !phoneNumber) {
+            return res.status(400).json({ error: "Either email or phone number is required for verification." });
+        }
+
+        // Find user by email or phone number
+        const user = await User.findOne({
+            where: {
+                [Op.or]: [{ email }, { phoneNumber }]
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // ✅ Handle email verification
+        if (email) {
+            const emailToken = generateEmailToken(user.email);
+            const verificationLink = `${process.env.BASE_URL}/api/auth/email?token=${emailToken}`;
+            await sendEmail(email, "Verify Your Email", `Click here to verify your email: <a href="${verificationLink}">Verify Email</a>`);
+        }
+
+        // ✅ Handle SMS verification
+        if (phoneNumber) {
+            const { otp, expiresAt } = generateOTP();
+            await user.update({ otp, otpExpiresAt: expiresAt });
+            await sendSMS(phoneNumber, `Your OTP code is: ${otp}`);
+        }
+
+        res.json({ message: "Verification email/SMS sent successfully!" });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error sending email or SMS OTP" });
+    }
+};
+
 exports.login = async (req, res) => {
     try {
-      const { email, password } = req.body;
-      const user = await User.findOne({ where: { email } });
-  
-      if (!user) return res.status(404).json({ error: "User not found" });
-  
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
-  
-      // Generate JWT token
-      const token = generateToken(user);
-  
-      // Set secure, HTTP-only cookie
-      res.cookie('authToken', token, {
-        httpOnly: true,  // Prevents client-side JavaScript from accessing the cookie
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict', // Protects against CSRF attacks
-        maxAge: 1 * 60 * 60 * 1000
-      });
-  
-      res.json({ message: "Login successful" });
-    } catch (error) {
-      res.status(500).json({ error: "Error logging in" });
-    }
-  };
-  
+        const { email, password } = req.body;
+        const user = await User.findOne({ where: { email } });
 
-exports.emailverify = async (req, res) => {
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Ensure phone or email is verified
+        if (!user.phone_verified && !user.email_verified) {
+            return res.status(403).json({ error: "Account not verified. Please verify your phone number or email." });
+        }
+
+        // Check password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        // Generate JWT token
+        const token = generateToken(user);
+
+        // Set secure, HTTP-only cookie
+        res.cookie('authToken', token, {
+            httpOnly: true,  // Prevents client-side JavaScript from accessing the cookie
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict', // Protects against CSRF attacks
+            maxAge: 1 * 60 * 60 * 1000 // 1 hour
+        });
+
+        res.json({ message: "Login successful" });
+
+    } catch (error) {
+        console.error("Login Error:", error);
+        res.status(500).json({ error: "Error logging in" });
+    }
+};
+
+
+exports.emailVerify = async (req, res) => {
     try {
         const { token } = req.query;
 
@@ -127,16 +165,17 @@ exports.emailverify = async (req, res) => {
         }
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.EMAIL_VERIFICATION_SECRET);
+        const decoded = jwt.verify(token, process.env.EMAIL_SECRET);
 
         // Find user
-        const user = await User.findByPk(decoded.userId);
+        const user = await User.findOne({ where: { email: decoded.email } });
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         // Mark email as verified
-        await User.update({ isEmailVerified: true }, { where: { id: user.id } });
+        await User.update({ email_verified: true }, { where: { id: user.id } });
 
         return res.json({ message: 'Email verified successfully!' });
 
@@ -148,7 +187,7 @@ exports.emailverify = async (req, res) => {
 
 
 
-exports.smsverify = async (req, res) => {
+exports.smsVerify = async (req, res) => {
     try {
         const { phoneNumber, otp } = req.body;
 
@@ -170,7 +209,7 @@ exports.smsverify = async (req, res) => {
 
         // Mark phone number as verified
         await User.update(
-            { otp: null, otpExpiresAt: null, isPhoneVerified: true }, 
+            { otp: null, otpExpiresAt: null, phone_verified: true },
             { where: { phoneNumber } }
         );
 
