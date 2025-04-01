@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const db = require('../models');
-const axios = require('axios');
+// const axios = require('axios');
 const { validationResult } = require('express-validator');
 
 const generateEmailToken = require('../utils/generateEmailToken');
@@ -31,7 +31,7 @@ exports.register = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
         }
 
-        const { companyId, firstName, lastName, email, phoneNumber, password, roleId, joiningDate, dob } = req.body;
+        const { companyId, firstName, lastName, email, phoneNumber, password, roleId } = req.body;
 
         // Ensure at least one verification method is provided
         if (!email && !phoneNumber) {
@@ -42,7 +42,6 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: "Password must be at least 8 characters long." });
         }
 
-        // Check if email or phone number is already registered
         const existingUser = await User.findOne({
             where: {
                 [Op.or]: [{ email }, { phoneNumber }]
@@ -55,6 +54,8 @@ exports.register = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const dob = new Date(req.body.dob).toISOString().split('T')[0];
+
         // Create user in the database (unverified)
         const user = await User.create({
             companyId,
@@ -64,7 +65,7 @@ exports.register = async (req, res) => {
             phoneNumber,
             password: hashedPassword,
             roleId,
-            joiningDate,
+            joiningDate : new Date(),
             dob
         });
 
@@ -97,8 +98,8 @@ exports.sendEmailSMS = async (req, res) => {
             }
         });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
+        if (!user || user.status === "deleted") {
+            return res.status(404).json({ message: "User not found or deleted" });
         }
 
         // ✅ Handle email verification
@@ -128,8 +129,8 @@ exports.login = async (req, res) => {
         const { email, password } = req.body;
         const user = await User.findOne({ where: { email } });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
+        if (!user || user.status === "deleted") {
+            return res.status(404).json({ message: "User not found or deleted" });
         }
 
         // Ensure phone or email is verified
@@ -142,6 +143,8 @@ exports.login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ error: "Invalid credentials" });
         }
+
+        await user.update({ last_signed_in_at: new Date(), status: "active" }, { where: { id: user.id } });
 
         // Generate JWT token
         const token = generateToken(user);
@@ -162,7 +165,6 @@ exports.login = async (req, res) => {
     }
 };
 
-
 exports.emailVerify = async (req, res) => {
     try {
         const { token } = req.query;
@@ -177,18 +179,18 @@ exports.emailVerify = async (req, res) => {
         // Find user
         const user = await User.findOne({ where: { email: decoded.email } });
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!user || user.status === "deleted") {
+            return res.status(404).json({ message: "User not found or deleted" });
         }
 
         // Mark email as verified
-        await User.update({ email_verified: true }, { where: { id: user.id } });
+        await user.update({ email_verified: true, status: "inactive" }, { where: { id: user.id } });
 
         return res.json({ message: 'Email verified successfully!' });
 
     } catch (error) {
-        console.error('Error verifying email:', error);
-        return res.status(400).json({ message: 'Invalid or expired token' });
+        console.error("Error verifying email:", error);
+        return res.status(400).json({ message: "Invalid or expired token" });
     }
 };
 
@@ -201,8 +203,8 @@ exports.smsVerify = async (req, res) => {
         // Find user
         const user = await User.findOne({ where: { phoneNumber } });
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!user || user.status === "deleted") {
+            return res.status(404).json({ message: "User not found or deleted" });
         }
 
         // Check OTP validity
@@ -215,8 +217,8 @@ exports.smsVerify = async (req, res) => {
         }
 
         // Mark phone number as verified
-        await User.update(
-            { otp: null, otpExpiresAt: null, phone_verified: true },
+        await user.update(
+            { otp: null, otpExpiresAt: null, phone_verified: true, status: "inactive" },
             { where: { phoneNumber } }
         );
 

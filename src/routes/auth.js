@@ -16,5 +16,5 @@ router.post('/sms', smsVerify);
 router.post('/email', emailVerify);
 router.post('/login', login);
 router.post('/sendES', sendEmailSMS);
-
+  
 module.exports = router;

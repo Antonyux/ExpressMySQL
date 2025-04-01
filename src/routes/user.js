@@ -15,4 +15,7 @@ router.get('/admin/:id', verifyToken, verifyAdmin, adminController.getUserById);
 router.put('/admin/:id', verifyToken, verifyAdmin, adminController.updateUser);
 router.delete('/admin/:id', verifyToken, verifyAdmin, adminController.deleteUser);
 
+router.post('/logout', verifyToken, userController.logout);
+
+
 module.exports = router;

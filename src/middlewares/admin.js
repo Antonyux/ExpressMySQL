@@ -17,6 +17,7 @@ module.exports.verifyAdmin = async (req, res, next) => {
         }
 
         next();
+        
     } catch (error) {
         console.error("Error verifying admin:", error);
         res.status(500).json({ error: "Internal server error" });

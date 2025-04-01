@@ -79,10 +79,6 @@ const User = sequelize.define('Users', {
   verification_token: {
       type: DataTypes.STRING,
       allowNull: true
-  },
-  verification_attempts: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
   }
 
 }, {
