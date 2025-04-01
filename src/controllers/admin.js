@@ -4,13 +4,23 @@ const bcrypt = require('bcryptjs');
 
 exports.createUser = async (req, res) => {
     try {
-        const { firstName, lastName, email, phoneNumber, password, role } = req.body;
+        const { companyId, firstName, lastName, email, phoneNumber, password, roleId, joiningDate, dob } = req.body;
 
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) return res.status(400).json({ message: "Email already registered" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await User.create({ firstName, lastName, email, phoneNumber, password: hashedPassword, role });
+        const user = await User.create({
+            companyId,
+            firstName,
+            lastName,
+            email,
+            phoneNumber,
+            password: hashedPassword,
+            roleId,
+            joiningDate,
+            dob
+        });
 
         res.status(201).json({ message: "User created successfully", user });
     } catch (error) {
@@ -20,11 +30,13 @@ exports.createUser = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
     try {
-        const { firstName, lastName, email, phoneNumber, role } = req.body;
+        const { firstName, lastName, email, phoneNumber, password, roleId } = req.body;
         const user = await User.findByPk(req.params.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        await user.update({ firstName, lastName, email, phoneNumber, role });
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await user.update({ firstName, lastName, email, phoneNumber, password: hashedPassword, roleId });
         res.json({ message: "User updated successfully", user });
     } catch (error) {
         res.status(500).json({ error: "Error updating user" });

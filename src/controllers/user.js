@@ -1,6 +1,4 @@
-const bcrypt = require('bcryptjs');
-const { User, Role } = require('../models'); 
-const { validationResult } = require('express-validator');
+const { User } = require('../models'); 
 
 
 exports.updateUserProfile = async (req, res) => {

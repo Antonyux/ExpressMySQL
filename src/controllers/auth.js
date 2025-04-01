@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const db = require('../models');
 const axios = require('axios');
+const { validationResult } = require('express-validator');
 
 const generateEmailToken = require('../utils/generateEmailToken');
 const generateOTP = require('../utils/generateOTP');
@@ -23,6 +24,13 @@ const sendSMS = async (phone, message) => {
 
 exports.register = async (req, res) => {
     try {
+
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+        }
+
         const { companyId, firstName, lastName, email, phoneNumber, password, roleId, joiningDate, dob } = req.body;
 
         // Ensure at least one verification method is provided
@@ -74,7 +82,6 @@ exports.register = async (req, res) => {
 
 exports.sendEmailSMS = async (req, res) => {
     try {
-        // const { email, phoneNumber } = req.body;
         const email = req.body.email ? req.body.email : null;
         const phoneNumber = req.body.phoneNumber ? req.body.phoneNumber : null;
 

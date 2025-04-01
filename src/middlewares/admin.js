@@ -1,5 +1,6 @@
 const db = require('../models');
 const User = db.User;
+const Role = db.Role;
 
 module.exports.verifyAdmin = async (req, res, next) => {
     try {
