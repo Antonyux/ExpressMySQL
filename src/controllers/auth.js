@@ -31,7 +31,7 @@ exports.register = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
         }
 
-        const { companyId, firstName, lastName, email, phoneNumber, password, roleId } = req.body;
+        const { companyId, firstName, lastName, email, phoneNumber, password, roleId, dob } = req.body;
 
         // Ensure at least one verification method is provided
         if (!email && !phoneNumber) {
@@ -54,8 +54,7 @@ exports.register = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const dob = new Date(req.body.dob).toISOString().split('T')[0];
-
+        console.log("Formatted DOB:", dob); // Debugging
         // Create user in the database (unverified)
         const user = await User.create({
             companyId,

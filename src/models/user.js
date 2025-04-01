@@ -53,7 +53,7 @@ const User = sequelize.define('Users', {
     allowNull: false
   },
   dob: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: false
   },
   status: {
@@ -74,10 +74,6 @@ const User = sequelize.define('Users', {
   },
   last_signed_in_at: {
       type: DataTypes.DATE,
-      allowNull: true
-  },
-  verification_token: {
-      type: DataTypes.STRING,
       allowNull: true
   }
 

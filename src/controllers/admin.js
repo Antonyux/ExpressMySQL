@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 
 exports.createUser = async (req, res) => {
     try {
-        const { companyId, firstName, lastName, email, phoneNumber, password, roleId } = req.body;
+        const { companyId, firstName, lastName, email, phoneNumber, password, roleId, dob } = req.body;
 
         if (!email && !phoneNumber) {
             return res.status(400).json({ message: "Either email or phone number is required for verification." });
@@ -28,7 +28,6 @@ exports.createUser = async (req, res) => {
         
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const dob = new Date(req.body.dob).toISOString().split('T')[0];
 
         const user = await User.create({
             companyId,
