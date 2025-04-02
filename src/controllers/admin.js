@@ -2,19 +2,20 @@ const db = require('../models');
 const { Op } = require('sequelize');
 
 const User = db.User;
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 exports.createUser = async (req, res) => {
     try {
-        const { companyId, firstName, lastName, email, phoneNumber, password, roleId, dob } = req.body;
-
-        if (!email && !phoneNumber) {
-            return res.status(400).json({ message: "Either email or phone number is required for verification." });
-        }
-
-        if (!password || password.length < 8) {
-            return res.status(400).json({ message: "Password must be at least 8 characters long." });
-        }
+        const {
+            companyId,
+            firstName,
+            lastName,
+            email,
+            phoneNumber,
+            password,
+            roleId,
+            dob
+          } = req.body;
 
         const existingUser = await User.findOne({
                     where: {
@@ -41,7 +42,10 @@ exports.createUser = async (req, res) => {
             dob
         });
 
-        res.status(201).json({ message: "User created successfully", user });
+        res.status(201).json({
+            message: "User registered successfully! Next please verify via Email or SMS or both.",
+            user: { id: user.id, firstName, lastName, email, phoneNumber }
+        });
     } catch (error) {
         res.status(500).json({ error: "Error creating user" });
     }
@@ -49,16 +53,56 @@ exports.createUser = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
     try {
-        const { firstName, lastName, email, phoneNumber, password, roleId } = req.body;
-        const user = await User.findByPk(req.params.id);
-        
-        if (!user || user.status === "deleted") {
-            return res.status(404).json({ message: "User not found or deleted" });
+        const {
+            firstName = null,
+            lastName = null,
+            email = null,
+            phoneNumber = null,
+            password = null,
+            roleId = null,
+            status = null
+          } = req.body;
+
+
+        const existingUser = await User.findOne({
+            where: {
+                [Op.or]: [{ email }, { phoneNumber }]
+            }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ message: "Email or phone number already registered" });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await User.findByPk(req.params.id);
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
-        await user.update({ firstName, lastName, email, phoneNumber, password: hashedPassword, roleId });
+        if (password && password.length < 8) {
+            return res.status(400).json({ message: "Password must be at least 8 characters long." });
+        }
+
+        let hashedPassword = null;
+        if (password) {
+            hashedPassword = await bcrypt.hash(password, 10);
+          }
+
+        const updatedData = Object.fromEntries(
+            Object.entries({
+              firstName,
+              lastName,
+              email,
+              phoneNumber,
+              hashedPassword,
+              roleId,
+              status
+            }).filter(([_, value]) => value !== null)
+          );
+
+        await user.update(updatedData);
+          
         res.json({ message: "User updated successfully", user });
     } catch (error) {
         res.status(500).json({ error: "Error updating user" });
@@ -92,8 +136,8 @@ exports.getUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
     try {
         const user = await User.findByPk(req.params.id);
-        if (!user || user.status === "deleted") {
-            return res.status(404).json({ message: "User not found or deleted" });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
 
         res.json(user);

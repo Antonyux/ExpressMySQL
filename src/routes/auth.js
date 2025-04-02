@@ -1,20 +1,17 @@
 const express = require('express');
-const { body } = require('express-validator');
-const { register, login, emailVerify, smsVerify, sendEmailSMS } = require('../controllers/auth');
+const validation = require('../middlewares/validation');
+const { register, sendES, TFAsendES , loginTFA, login, verifyEmail, verifySMS } = require('../controllers/auth');
+const { TFAverifySMS, TFAverifyEmail } = require('../middlewares/auth');
 
 const router = express.Router();
 
-router.post(
-    '/register',
-    [
-      body('email').isEmail().withMessage('Invalid email'),
-      body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    ], register);
-  
-
-router.post('/sms', smsVerify);
-router.post('/email', emailVerify);
-router.post('/login', login);
-router.post('/sendES', sendEmailSMS);
-  
+router.post('/register', validation, register);
+router.post('/verifySMS', verifySMS);
+router.post('/verifyEmail', verifyEmail);
+router.post('/login', loginTFA);
+router.post('/TFAverifySMS', TFAverifySMS, login);
+router.post('/TFAverifyEmail', TFAverifyEmail, login);
+router.post('/sendES', sendES);
+router.post('/TFAsendES', TFAsendES);
+    
 module.exports = router;

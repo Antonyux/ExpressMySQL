@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
+require("dotenv").config();
+const bcrypt = require('bcrypt');
 
 const Role = require('./role');
 
@@ -48,6 +50,14 @@ const User = sequelize.define('Users', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  TFAverifyEmail: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  TFAverifySMS: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
   joiningDate: {
     type: DataTypes.DATE,
     allowNull: false
@@ -80,5 +90,54 @@ const User = sequelize.define('Users', {
 }, {
   timestamps: true
 });
+
+
+
+User.afterSync(async () => {
+  try {
+    const companyId = "0000";
+    const firstName = "Admin";
+    const lastName = "One";
+    const email = process.env.ADMIN_EMAIL;
+    const phoneNumber = process.env.ADMIN_PHONENO;
+    const password = String(process.env.ADMIN_PASS);
+    const roleId = "1";
+    const dob = "2000-01-01";
+    const joiningDate = "2025-01-01";
+    const email_verified = true;
+    const phone_verified = true;
+    const status = "inactive";
+
+    const hashedPassword = await bcrypt.hash(password, 10); // ✅ Await now works
+
+    const [created] = await User.findOrCreate({
+      where: { email },
+      defaults: {
+        companyId,
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        password: hashedPassword,
+        roleId,
+        joiningDate,
+        dob,
+        email_verified,
+        phone_verified,
+        status,
+      },
+    });
+
+    if (created) {
+      console.log("✅ Admin user created.");
+    } else {
+      console.log("✅ Admin already exists.");
+    }
+  } catch (error) {
+    console.error("❌ Error inserting admin user:", error);
+  }
+});
+
+
 
 module.exports = User;
