@@ -49,7 +49,7 @@ module.exports.TFAverifyEmail = async (req, res, next) => {
       }
 
       if (!user.email_verified) {
-          return res.status(404).json({ message: "Email is not verified. Try PhoneNumber SMS Verification." });
+          return res.status(404).json({ message: "Email is not verified. Try TFA SMS Verification." });
       }
 
       await user.update({ TFAverifyEmail: true }, { where: { id: user.id } });
@@ -79,7 +79,7 @@ module.exports.TFAverifySMS = async (req, res, next) => {
       }
 
       if (!user.phone_verified) {
-        return res.status(404).json({ message: "Phone Number is not verified. Try Email Verification." });
+        return res.status(404).json({ message: "Phone Number is not verified. Try TFA Email Verification." });
       }
 
       if (user.otp !== otp) {

@@ -167,6 +167,10 @@ exports.loginTFA = async (req, res) => {
             return res.status(404).json({ message: "User not found or deleted" });
         }
 
+        if (user.status === "active") {
+            return res.status(404).json({ message: "User is currently active. Max sessions(Max = 1) reached." });
+        }
+
         // Ensure phone or email is verified
         if (!user.phone_verified && !user.email_verified) {
             return res.status(403).json({ error: "Account not verified. Please verify your phone number or email." });
@@ -178,7 +182,9 @@ exports.loginTFA = async (req, res) => {
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        res.json({ message: "Please use verified Email or Phone number for 2FA" });
+        await user.update({ passwordOK: true }, { where: { id: user.id } });
+
+        res.json({ message: "Password OK. Please use verified Email or Phone number for 2FA" });
 
     } catch (error) {
         console.error("Login Error:", error);
@@ -198,7 +204,11 @@ exports.login = async (req, res) => {
             return res.status(403).json({ error: "2FA verification required before login." });
         }
 
-        await user.update({ last_signed_in_at: new Date(), status: "active", TFAverifyEmail: false, TFAverifySMS: false }, { where: { id: user.id } });
+        if (!user.passwordOK) {
+            return res.status(403).json({ error: "2FA OK. Invalid login. User Password needed." });
+        }
+
+        await user.update({ passwordOK: false, last_signed_in_at: new Date(), status: "active", TFAverifyEmail: false, TFAverifySMS: false }, { where: { id: user.id } });
 
         // Generate JWT token
         const token = generateToken(user);
@@ -211,7 +221,9 @@ exports.login = async (req, res) => {
             maxAge: 1 * 60 * 60 * 1000 // 1 hour
         });
 
-        res.json({ message: "Login successful" });
+        res.json({ message: "Login successful",
+                   user: { id: user.id, firstName:user.firstName, lastName:user.lastName, email:user.email, phoneNumber:user.phoneNumber }
+        });
 
     } catch (error) {
         console.error("Login Error:", error);

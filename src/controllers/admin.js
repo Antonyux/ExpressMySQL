@@ -54,6 +54,7 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const {
+            companyId = null,
             firstName = null,
             lastName = null,
             email = null,
@@ -80,10 +81,6 @@ exports.updateUser = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        if (password && password.length < 8) {
-            return res.status(400).json({ message: "Password must be at least 8 characters long." });
-        }
-
         let hashedPassword = null;
         if (password) {
             hashedPassword = await bcrypt.hash(password, 10);
@@ -91,6 +88,7 @@ exports.updateUser = async (req, res) => {
 
         const updatedData = Object.fromEntries(
             Object.entries({
+              companyId,
               firstName,
               lastName,
               email,

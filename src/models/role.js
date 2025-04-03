@@ -15,15 +15,16 @@ const Role = sequelize.define('Roles', {
 }, { timestamps: true });
 
 
+
 Role.afterSync(async () => {
-  const roles = ["Admin", "Engineer", "Manager"];
+  const roles = ["Admin" , "Manager" ,"Engineer"];
   for (const roleName of roles) {
     await Role.findOrCreate({
       where: { name: roleName },
       defaults: { name: roleName }
     });
   }
-  console.log("✅ Default roles inserted");
+  console.log("✅ roles added");
 });
 
 

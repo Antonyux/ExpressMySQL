@@ -36,7 +36,7 @@ const User = sequelize.define('Users', {
   },
   roleId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    defaultValue: 3,
     references: {
       model: Role,
       key: 'id'
@@ -73,6 +73,10 @@ const User = sequelize.define('Users', {
   password: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  passwordOK: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   otp: {
       type: DataTypes.STRING,
