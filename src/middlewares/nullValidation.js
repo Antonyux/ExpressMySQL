@@ -1,4 +1,5 @@
 const { body, validationResult } = require("express-validator");
+const { parsePhoneNumberFromString } = require("libphonenumber-js");
 
 const validationRules = [
   body("email")
@@ -11,8 +12,13 @@ const validationRules = [
   body("phoneNumber")
     .optional({ nullable: true })
     .trim()
-    .isMobilePhone()
-    .withMessage("Invalid phone number"),
+    .custom((value) => {
+      const phoneNumber = parsePhoneNumberFromString(value);
+      if (!phoneNumber.isValid()) {
+        throw new Error("Invalid phone number"); // This message will be used
+      }
+      return true;
+    }),
 
   body("password")
     .optional({ nullable: true })

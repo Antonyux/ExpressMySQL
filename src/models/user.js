@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-require("dotenv").config();
 const bcrypt = require('bcrypt');
 
 const Role = require('./role');
@@ -102,9 +101,9 @@ User.afterSync(async () => {
     const companyId = "0000";
     const firstName = "Admin";
     const lastName = "One";
-    const email = process.env.ADMIN_EMAIL;
-    const phoneNumber = process.env.ADMIN_PHONENO;
-    const password = String(process.env.ADMIN_PASS);
+    const email = process.env.ADMIN_EMAIL || 'admin@gmail.com';;
+    const phoneNumber = process.env.ADMIN_PHONENO || '+911234567890';;
+    const password = String(process.env.ADMIN_PASS) || '1234567890';
     const roleId = "1";
     const dob = "2000-01-01";
     const joiningDate = "2025-01-01";

@@ -47,10 +47,10 @@ exports.updateUserProfile = async (req, res) => {
         await user.update(updatedData);
 
         if (email) {
-            await user.update({ email_verified: false }, { where: { id: user.id } });
+            await user.update({ email_verified: false });
         }
         if (phoneNumber) {
-            await user.update({ phone_verified: false }, { where: { id: user.id } });
+            await user.update({ phone_verified: false });
         }
 
         res.json({ message: "Profile updated successfully", user });
@@ -69,7 +69,7 @@ exports.logout = async (req, res) => {
         return res.status(404).json({ message: "User not found or deleted" });
     }
 
-    await user.update({ status: "inactive" }, { where: { id: user.id } });
+    await user.update({ status: "inactive" });
 
     res.clearCookie('authToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: "None" }); 
     return res.status(200).json({ message: "Logged out successfully" });

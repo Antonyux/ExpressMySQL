@@ -100,11 +100,11 @@ exports.sendES = async (req, res) => {
         // ✅ Handle SMS verification
         if (phoneNumber) {
             const { otp, expiresAt } = generateOTP();
-            await user.update({ otp, otpExpiresAt: expiresAt });
+            await user.update({ otp: otp, otpExpiresAt: expiresAt });
             await sendSMS(phoneNumber, `Your OTP code is: ${otp}`);
         }
 
-        res.json({ message: "Verification email/SMS-OTP for registration sent successfully!" });
+        res.json({ message: "Verification email or SMS-OTP for registration sent successfully!" });
 
     } catch (error) {
         console.error(error);
@@ -147,7 +147,7 @@ exports.TFAsendES = async (req, res) => {
             await sendSMS(phoneNumber, `Your OTP code is: ${otp}`);
         }
 
-        res.json({ message: "Verification email/SMS-OTP for 2FA sent successfully!" });
+        res.json({ message: "Verification email or SMS-OTP for 2FA sent successfully!" });
 
     } catch (error) {
         console.error(error);
@@ -167,10 +167,6 @@ exports.loginTFA = async (req, res) => {
             return res.status(404).json({ message: "User not found or deleted" });
         }
 
-        if (user.status === "active") {
-            return res.status(404).json({ message: "User is currently active. Max sessions(Max = 1) reached." });
-        }
-
         // Ensure phone or email is verified
         if (!user.phone_verified && !user.email_verified) {
             return res.status(403).json({ error: "Account not verified. Please verify your phone number or email." });
@@ -182,7 +178,7 @@ exports.loginTFA = async (req, res) => {
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        await user.update({ passwordOK: true }, { where: { id: user.id } });
+        await user.update({ passwordOK: true });
 
         res.json({ message: "Password OK. Please use verified Email or Phone number for 2FA" });
 
@@ -208,7 +204,7 @@ exports.login = async (req, res) => {
             return res.status(403).json({ error: "2FA OK. Invalid login. User Password needed." });
         }
 
-        await user.update({ passwordOK: false, last_signed_in_at: new Date(), status: "active", TFAverifyEmail: false, TFAverifySMS: false }, { where: { id: user.id } });
+        await user.update({ passwordOK: false, last_signed_in_at: new Date(), status: "active", TFAverifyEmail: false, TFAverifySMS: false });
 
         // Generate JWT token
         const token = generateToken(user);
@@ -218,7 +214,7 @@ exports.login = async (req, res) => {
             httpOnly: true,  
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict', 
-            maxAge: 1 * 60 * 60 * 1000 // 1 hour
+            maxAge: process.env.COOKIE_EXPIRATION // 30 days
         });
 
         res.json({ message: "Login successful",
@@ -249,7 +245,7 @@ exports.verifyEmail = async (req, res) => {
             return res.status(404).json({ message: "User not found or deleted" });
         }
 
-        await user.update({ email_verified: true, status: "inactive" }, { where: { id: user.id } });
+        await user.update({ email_verified: true, status: "inactive" });
 
         return res.json({ message: 'Email verified successfully!' });
 
@@ -281,10 +277,7 @@ exports.verifySMS = async (req, res) => {
             return res.status(400).json({ message: 'OTP expired' });
         }
 
-        await user.update(
-            { otp: null, otpExpiresAt: null, phone_verified: true, status: "inactive" },
-            { where: { phoneNumber } }
-        );
+        await user.update({ otp: null, otpExpiresAt: null, phone_verified: true, status: "inactive" });
 
         return res.json({ message: 'Phone number verified successfully!' });
 

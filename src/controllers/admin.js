@@ -100,6 +100,13 @@ exports.updateUser = async (req, res) => {
           );
 
         await user.update(updatedData);
+
+        if (email) {
+            await user.update({ email_verified: false });
+        }
+        if (phoneNumber) {
+            await user.update({ phone_verified: false });
+        }
           
         res.json({ message: "User updated successfully", user });
     } catch (error) {
@@ -112,10 +119,8 @@ exports.deleteUser = async (req, res) => {
         const user = await User.findByPk(req.params.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        await User.update(
-            { status: "deleted" },
-            { where: { id:user.id } }
-        );
+        await user.update({ status: "deleted" });
+        
         res.json({ message: "User deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: "Error deleting user" });
@@ -125,6 +130,19 @@ exports.deleteUser = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const users = await User.findAll();
+
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; 
+        const now = Date.now(); 
+
+        users.forEach(async (user) => {
+            if (user.last_signed_in_at) {
+                const lastSignedIn = new Date(user.last_signed_in_at);
+                if (now - lastSignedIn.getTime() > THIRTY_DAYS_MS) {
+                    await user.update({ status: "inactive" });
+                }
+            }
+        });
+
         res.json(users);
     } catch (error) {
         res.status(500).json({ error: "Error fetching users" });

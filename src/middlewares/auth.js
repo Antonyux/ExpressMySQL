@@ -1,4 +1,3 @@
-require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const db = require('../models');
 
@@ -52,7 +51,7 @@ module.exports.TFAverifyEmail = async (req, res, next) => {
           return res.status(404).json({ message: "Email is not verified. Try TFA SMS Verification." });
       }
 
-      await user.update({ TFAverifyEmail: true }, { where: { id: user.id } });
+      await user.update({ TFAverifyEmail: true });
 
       console.log("Email verified for 2FA successfully!");
 
@@ -90,10 +89,7 @@ module.exports.TFAverifySMS = async (req, res, next) => {
           return res.status(400).json({ message: 'OTP expired' });
       }
 
-      await user.update(
-          { otp: null, otpExpiresAt: null, TFAverifySMS: true },
-          { where: { phoneNumber } }
-      );
+      await user.update({ otp: null, otpExpiresAt: null, TFAverifySMS: true });
 
       console.log("Phone number verified for 2FA successfully!");
 
