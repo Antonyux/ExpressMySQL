@@ -71,7 +71,7 @@ npm install
 
 ### 4️⃣  Start the Server  
 ```bash
-npm run dev
+npm run dev [this runs => nodemon app.js (so needs nodemon package installed to use this command.)]
 ```  
 ---
 
