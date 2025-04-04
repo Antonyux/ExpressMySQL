@@ -89,11 +89,67 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 | **POST**  | `/api/auth/sendES`       | Send email/SMS to verify after registration or adding of new user |
 | **POST**  | `/api/auth/TFAsendES`    | Send email/SMS for TFA verification |
 
+
+#### 🔹 **Register a User**  
+**Endpoint:** `POST /api/auth/register`  
+**Description:** Registers a new user and hashes their password before storing it in the database.  
+**Request Body:**  
+```json
+{
+  "companyId": 1,
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "johndoe@example.com",
+  "phoneNumber": "+123456789",
+  "password": "securepassword",
+  "dob": "1990-01-01"
+}
+```
+**Response:**  
+```json
+{
+  "message": "User registered successfully! Next please verify via Email or SMS or both.",
+  "user": { "id": 1, "firstName": "John", "lastName": "Doe", "email": "johndoe@example.com", "phoneNumber": "+123456789" }
+}
+```
+
+
+---
+
 ### 👤 User Routes (`/api/user/`)  
 | Method  | Endpoint                     | Description |
 |---------|------------------------------|-------------|
 | **PUT**  | `/api/user/profile/update`   | Update logged-in user's profile |
 | **POST**  | `/api/user/logout`          | Logout user |
+
+
+
+#### 🔹 **Update User Profile**  
+**Endpoint:** `PUT /api/user/profile/update`  
+**Authorization:** Bearer Token (JWT)  
+**Description:** Allows an authenticated user to update their profile information.  
+**Request Body:** *(All fields are optional)*  
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "newemail@example.com",
+  "phoneNumber": "+123456789",
+  "password": "newpassword",
+  "dob": "1990-01-01"
+}
+```
+**Response:**  
+```json
+{
+  "message": "Profile updated successfully",
+  "user": { "id": 1, "firstName": "John", "lastName": "Doe", "email": "newemail@example.com", "phoneNumber": "+123456789" }
+}
+```
+
+---
+
+
 
 ### 🛠️ Admin Routes (`/api/user/admin/`)  
 | Method  | Endpoint               | Description |
@@ -107,3 +163,74 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 ---
 
 
+#### 🔹 **Create a New User (Admin Only)**  
+**Endpoint:** `POST /api/user/admin/create`  
+**Authorization:** Bearer Token (JWT) + Admin Privileges  
+**Description:** Allows an admin to create a new user.  
+**Request Body:**  
+```json
+{
+  "companyId": 1,
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "janesmith@example.com",
+  "phoneNumber": "+987654321",
+  "password": "securepassword",
+  "roleId": 2,
+  "dob": "1992-05-10"
+}
+```
+**Response:**  
+```json
+{
+  "message": "User registered successfully! Next please verify via Email or SMS or both.",
+  "user": { "id": 2, "firstName": "Jane", "lastName": "Smith", "email": "janesmith@example.com", "phoneNumber": "+987654321" }
+}
+```
+
+#### 🔹 **Get All Users (Admin Only)**  
+**Endpoint:** `GET /api/user/admin/`  
+**Authorization:** Bearer Token (JWT) + Admin Privileges  
+**Response:**  
+```json
+[
+  {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "johndoe@example.com",
+    "phoneNumber": "+123456789",
+    "status": "active"
+  },
+  {
+    "id": 2,
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "janesmith@example.com",
+    "phoneNumber": "+987654321",
+    "status": "inactive"
+  }
+]
+```
+
+#### 🔹 **Delete a User (Admin Only)**  
+**Endpoint:** `DELETE /api/user/admin/:id`  
+**Authorization:** Bearer Token (JWT) + Admin Privileges  
+**Response:**  
+```json
+{
+  "message": "User deleted successfully"
+}
+```
+
+---
+
+## 🔑 **Authentication & Security**  
+
+- **JWT-based authentication** (`Authorization: Bearer <token>`)
+- **Two-Factor Authentication (2FA)**
+- **Role-based access control for admins**
+- **Password hashing with bcrypt**
+- **Account verification via email/SMS OTP**
+
+---
