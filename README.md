@@ -84,8 +84,8 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 | **POST**  | `/api/auth/verifySMS`    | Verify user via SMS-OTP after /sendES |
 | **POST**  | `/api/auth/verifyEmail`  | Verify user via email-token after /sendES |
 | **POST**  | `/api/auth/login`        | Login user with email and password and initiating Two-Factor Authentication (2FA) |
-| **POST**  | `/api/auth/TFAverifySMS` | Verify 2FA via SMS-OTP after /TFAsendES and log in |
-| **POST**  | `/api/auth/TFAverifyEmail` | Verify 2FA via email-token after /TFAsendES and log in |
+| **POST**  | `/api/auth/TFAverifySMS` | Verify 2FA via SMS-OTP after /TFAsendES and log in (sends a cookie) |
+| **POST**  | `/api/auth/TFAverifyEmail` | Verify 2FA via email-token after /TFAsendES and log in (sends a cookie) |
 | **POST**  | `/api/auth/sendES`       | Send email/SMS to verify after registration or adding of new user |
 | **POST**  | `/api/auth/TFAsendES`    | Send email/SMS for TFA verification |
 
@@ -126,7 +126,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 
 #### 🔹 **Update User Profile**  
 **Endpoint:** `PUT /api/user/profile/update`  
-**Authorization:** Bearer Token (JWT)  
+**Authorization:** Cookie Token (JWT)  
 **Description:** Allows an authenticated user to update their profile information.  
 **Request Body:** *(All fields are optional)*  
 ```json
@@ -165,7 +165,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 
 #### 🔹 **Create a New User (Admin Only)**  
 **Endpoint:** `POST /api/user/admin/create`  
-**Authorization:** Bearer Token (JWT) + Admin Privileges  
+**Authorization:** Cookie Token (JWT) + Admin Privileges  
 **Description:** Allows an admin to create a new user.  
 **Request Body:**  
 ```json
@@ -190,7 +190,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 
 #### 🔹 **Get All Users (Admin Only)**  
 **Endpoint:** `GET /api/user/admin/`  
-**Authorization:** Bearer Token (JWT) + Admin Privileges  
+**Authorization:** Cookie Token (JWT) + Admin Privileges  
 **Response:**  
 ```json
 [
@@ -215,11 +215,12 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 
 #### 🔹 **Delete a User (Admin Only)**  
 **Endpoint:** `DELETE /api/user/admin/:id`  
-**Authorization:** Bearer Token (JWT) + Admin Privileges  
+**Authorization:** Cookie Token (JWT) + Admin Privileges  
 **Response:**  
 ```json
 {
-  "message": "User deleted successfully"
+  "message": "User deleted successfully",
+  "user": { "id": 2, "email": "janesmith@example.com" }
 }
 ```
 
@@ -227,7 +228,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 
 ## 🔑 **Authentication & Security**  
 
-- **JWT-based authentication** (`Authorization: Bearer <token>`)
+- **JWT-based authentication** (`Cookie based auth`)
 - **Two-Factor Authentication (2FA)**
 - **Role-based access control for admins**
 - **Password hashing with bcrypt**
