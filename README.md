@@ -69,16 +69,10 @@ npm install
 - Ensure MySQL is installed and running.  
 - Create a database and update `.env` variables accordingly.  
 
-### 4️⃣ Run Migrations (if applicable)  
-```bash
-npx sequelize-cli db:migrate
-```  
-
-### 5️⃣ Start the Server  
+### 4️⃣  Start the Server  
 ```bash
 npm run dev
 ```  
-
 ---
 
 ## 📜 API Endpoints  
@@ -87,12 +81,12 @@ npm run dev
 | Method  | Endpoint                | Description |
 |---------|-------------------------|-------------|
 | **POST**  | `/api/auth/register`     | Register a new user |
-| **POST**  | `/api/auth/verifySMS`    | Verify user via SMS |
-| **POST**  | `/api/auth/verifyEmail`  | Verify user via email |
-| **POST**  | `/api/auth/login`        | Login user with Two-Factor Authentication (TFA) |
-| **POST**  | `/api/auth/TFAverifySMS` | Verify TFA via SMS and log in |
-| **POST**  | `/api/auth/TFAverifyEmail` | Verify TFA via email and log in |
-| **POST**  | `/api/auth/sendES`       | Send email/SMS for verification |
+| **POST**  | `/api/auth/verifySMS`    | Verify user via SMS-OTP after /sendES |
+| **POST**  | `/api/auth/verifyEmail`  | Verify user via email-token after /sendES |
+| **POST**  | `/api/auth/login`        | Login user with email and password and initiating Two-Factor Authentication (2FA) |
+| **POST**  | `/api/auth/TFAverifySMS` | Verify 2FA via SMS-OTP after /TFAsendES and log in |
+| **POST**  | `/api/auth/TFAverifyEmail` | Verify 2FA via email-token after /TFAsendES and log in |
+| **POST**  | `/api/auth/sendES`       | Send email/SMS to verify after registration or adding of new user |
 | **POST**  | `/api/auth/TFAsendES`    | Send email/SMS for TFA verification |
 
 ### 👤 User Routes (`/api/user/`)  
@@ -112,10 +106,4 @@ npm run dev
 
 ---
 
-## 🛠️ Useful Commands  
-
-- **Run the server**: `npm start`  
-- **Run in development mode**: `npm run dev` (if using `nodemon`)  
-- **Lint the code**: `npm run lint`  
-- **Run tests**: `npm test`  
 
