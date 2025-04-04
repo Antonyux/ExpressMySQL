@@ -161,6 +161,11 @@ exports.loginTFA = async (req, res) => {
     try {
 
         const { email, password } = req.body;
+
+        if (!email && !password) {
+            return res.status(400).json({ error: "Email and Password are required for login." });
+        }
+
         const user = await User.findOne({ where: { email } });
 
         if (!user || user.status === "deleted") {
