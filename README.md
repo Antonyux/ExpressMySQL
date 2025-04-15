@@ -44,9 +44,9 @@ BASE_URL=http://localhost:5000
 EMAIL_SECRET=your_email_secret_key
 
 # Admin Credentials (for initial setup)
-ADMIN_PHONENO=your_admin_phone
-ADMIN_EMAIL=your_admin_email
-ADMIN_PASS=your_admin_password
+ADMIN_PHONENO=+911234567890
+ADMIN_EMAIL=admin@mail.com
+ADMIN_PASS=1234567890
 
 # Environment
 NODE_ENV=development
@@ -71,8 +71,9 @@ npm install
 
 ### 4️⃣  Start the Server  
 ```bash
-npm run dev [this runs => nodemon app.js (so needs nodemon package installed to use this command.)]
+npm run dev
 ```  
+ [this runs => nodemon app.js (so needs nodemon package installed to use this command.)]
 ---
 
 ## 📜 API Endpoints  
@@ -100,8 +101,8 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
   "firstName": "John",
   "lastName": "Doe",
   "email": "johndoe@example.com",
-  "phoneNumber": "+123456789",
-  "password": "securepassword",
+  "phoneNumber": "+911234567890",
+  "password": "hashedpassword",
   "dob": "1990-01-01"
 }
 ```
@@ -109,7 +110,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 ```json
 {
   "message": "User registered successfully! Next please verify via Email or SMS or both.",
-  "user": { "id": 1, "firstName": "John", "lastName": "Doe", "email": "johndoe@example.com", "phoneNumber": "+123456789" }
+  "user": { "id": 1, "firstName": "John", "lastName": "Doe", "email": "johndoe@example.com", "phoneNumber": "+911234567890" }
 }
 ```
 
@@ -134,7 +135,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
   "firstName": "John",
   "lastName": "Doe",
   "email": "newemail@example.com",
-  "phoneNumber": "+123456789",
+  "phoneNumber": "+911234567890",
   "password": "newpassword",
   "dob": "1990-01-01"
 }
@@ -143,7 +144,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 ```json
 {
   "message": "Profile updated successfully",
-  "user": { "id": 1, "firstName": "John", "lastName": "Doe", "email": "newemail@example.com", "phoneNumber": "+123456789" }
+  "user": { "id": 1, "firstName": "John", "lastName": "Doe", "email": "newemail@example.com", "phoneNumber": "+911234567890" }
 }
 ```
 
@@ -174,8 +175,8 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
   "firstName": "Jane",
   "lastName": "Smith",
   "email": "janesmith@example.com",
-  "phoneNumber": "+987654321",
-  "password": "securepassword",
+  "phoneNumber": "+919876543210",
+  "password": "hashedpassword",
   "roleId": 2,
   "dob": "1992-05-10"
 }
@@ -184,7 +185,7 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
 ```json
 {
   "message": "User registered successfully! Next please verify via Email or SMS or both.",
-  "user": { "id": 2, "firstName": "Jane", "lastName": "Smith", "email": "janesmith@example.com", "phoneNumber": "+987654321" }
+  "user": { "id": 2, "firstName": "Jane", "lastName": "Smith", "email": "janesmith@example.com", "phoneNumber": "+919876543210" }
 }
 ```
 
@@ -199,16 +200,20 @@ npm run dev [this runs => nodemon app.js (so needs nodemon package installed to 
     "firstName": "John",
     "lastName": "Doe",
     "email": "johndoe@example.com",
-    "phoneNumber": "+123456789",
-    "status": "active"
+    "phoneNumber": "+911234567890",
+    "status": "active",
+    ...
+    ...
   },
   {
     "id": 2,
     "firstName": "Jane",
     "lastName": "Smith",
     "email": "janesmith@example.com",
-    "phoneNumber": "+987654321",
-    "status": "inactive"
+    "phoneNumber": "+919876543210",
+    "status": "inactive",
+    ...
+    ...
   }
 ]
 ```
